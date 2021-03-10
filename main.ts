@@ -1,60 +1,77 @@
-import { App, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import * as CodeMirror from "codemirror";
 
-interface MyPluginSettings {
-	mySetting: string;
+interface PluginSettings {
+	language: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+const DEFAULT_SETTINGS: PluginSettings = {
+	language: 'c++'
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+interface SelectionRange {
+	start: { line: number; ch: number };
+	end: { line: number; ch: number };
+}
+
+export default class CodeBlockFromSelection extends Plugin {
+	settings: PluginSettings;
 
 	async onload() {
-		console.log('loading plugin');
-
 		await this.loadSettings();
 
-		this.addRibbonIcon('dice', 'Sample Plugin', () => {
-			new Notice('This is a notice!');
-		});
-
-		this.addStatusBarItem().setText('Status Bar Text');
-
 		this.addCommand({
-			id: 'open-sample-modal',
-			name: 'Open Sample Modal',
-			// callback: () => {
-			// 	console.log('Simple Callback');
-			// },
-			checkCallback: (checking: boolean) => {
-				let leaf = this.app.workspace.activeLeaf;
-				if (leaf) {
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-					return true;
-				}
-				return false;
-			}
+			id: 'code-block-from-selection',
+			name: 'Code block from selection',
+			callback: () => this.insertCodeBlock(),
+			hotkeys: [
+				{
+					modifiers: ["Mod"],
+					key: "`",
+				},
+			],
 		});
 
 		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		this.registerCodeMirror((cm: CodeMirror.Editor) => {
-			console.log('codemirror', cm);
-		});
-
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
-	onunload() {
-		console.log('unloading plugin');
+	insertCodeBlock(): void {
+		let editor = this.getEditor();
+		let selectedText = CodeBlockFromSelection.getSelectedText(editor);
+		let language = this.settings.language;
+
+		editor.replaceSelection(`\`\`\`${language}\n${selectedText}\n\`\`\``);
+	}
+
+	private getEditor(): CodeMirror.Editor {
+		let activeLeaf: any = this.app.workspace.activeLeaf;
+
+		return activeLeaf.view.sourceMode.cmEditor;
+	}
+
+	private static getSelectedText(editor: CodeMirror.Editor): string {
+		if (!editor.somethingSelected())
+			CodeBlockFromSelection.selectLineUnderCursor(editor);
+
+		return editor.getSelection();
+	}
+
+	private static selectLineUnderCursor(editor: CodeMirror.Editor) {
+		let selection = CodeBlockFromSelection.getLineUnderCursor(editor);
+		editor.getDoc().setSelection(selection.start, selection.end);
+	}
+
+	private static getLineUnderCursor(editor: CodeMirror.Editor): SelectionRange {
+		let fromCh, toCh: number;
+		let cursor = editor.getCursor();
+
+		fromCh = 0;
+		toCh = editor.getLine(cursor.line).length;
+
+		return {
+			start: { line: cursor.line, ch: fromCh },
+			end: { line: cursor.line, ch: toCh },
+		};
 	}
 
 	async loadSettings() {
@@ -66,46 +83,31 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
 
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		let {contentEl} = this;
-		contentEl.empty();
-	}
-}
 
 class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: CodeBlockFromSelection;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: CodeBlockFromSelection) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	display(): void {
-		let {containerEl} = this;
+		let { containerEl } = this;
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
+		containerEl.createEl('h2', { text: 'Code block from selection - Settings' });
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setName('Language')
+			.setDesc('')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue('')
+				.setPlaceholder('Example: c++')
+				.setValue(this.plugin.settings.language)
 				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.language = value;
 					await this.plugin.saveSettings();
 				}));
 	}
