@@ -35,7 +35,7 @@ export default class CodeBlockFromSelection extends Plugin {
 			let selectedText = CodeBlockFromSelection.getSelectedText(editor);
 			let language = this.settings.language;
 
-			editor.replaceSelection(`\`\`\`${language}\n${selectedText}\n\`\`\``);
+			editor.replaceSelection(`\n\`\`\`${language}\n${selectedText}\n\`\`\`\n`);
 		}
 	}
 
