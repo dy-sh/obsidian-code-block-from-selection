@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, MarkdownView } from 'obsidian';
 import * as CodeMirror from "codemirror";
 
 interface PluginSettings {
@@ -6,7 +6,7 @@ interface PluginSettings {
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
-	language: 'c++'
+	language: ''
 }
 
 interface SelectionRange {
@@ -23,30 +23,24 @@ export default class CodeBlockFromSelection extends Plugin {
 		this.addCommand({
 			id: 'code-block-from-selection',
 			name: 'Code block from selection',
-			callback: () => this.insertCodeBlock(),
-			hotkeys: [
-				{
-					modifiers: ["Mod"],
-					key: "`",
-				},
-			],
+			callback: () => this.insertCodeBlock()
 		});
 
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new SettingTab(this.app, this));
 	}
 
 	insertCodeBlock(): void {
 		let editor = this.getEditor();
-		let selectedText = CodeBlockFromSelection.getSelectedText(editor);
-		let language = this.settings.language;
+		if (editor) {
+			let selectedText = CodeBlockFromSelection.getSelectedText(editor);
+			let language = this.settings.language;
 
-		editor.replaceSelection(`\`\`\`${language}\n${selectedText}\n\`\`\``);
+			editor.replaceSelection(`\`\`\`${language}\n${selectedText}\n\`\`\``);
+		}
 	}
 
 	private getEditor(): CodeMirror.Editor {
-		let activeLeaf: any = this.app.workspace.activeLeaf;
-
-		return activeLeaf.view.sourceMode.cmEditor;
+		return this.app.workspace.getActiveViewOfType(MarkdownView)?.sourceMode.cmEditor;
 	}
 
 	private static getSelectedText(editor: CodeMirror.Editor): string {
@@ -85,7 +79,7 @@ export default class CodeBlockFromSelection extends Plugin {
 
 
 
-class SampleSettingTab extends PluginSettingTab {
+class SettingTab extends PluginSettingTab {
 	plugin: CodeBlockFromSelection;
 
 	constructor(app: App, plugin: CodeBlockFromSelection) {
