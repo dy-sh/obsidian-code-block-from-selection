@@ -32,30 +32,30 @@ export default class CodeBlockFromSelection extends Plugin {
 	insertCodeBlock(): void {
 		let editor = this.getEditor();
 		if (editor) {
-			let selectedText = CodeBlockFromSelection.getSelectedText(editor);
+			let selectedText = this.getSelectedText(editor);
 			let language = this.settings.language;
 
 			editor.replaceSelection(`\n\`\`\`${language}\n${selectedText}\n\`\`\`\n`);
 		}
 	}
 
-	private getEditor(): CodeMirror.Editor {
+	getEditor(): CodeMirror.Editor {
 		return this.app.workspace.getActiveViewOfType(MarkdownView)?.sourceMode.cmEditor;
 	}
 
-	private static getSelectedText(editor: CodeMirror.Editor): string {
+	getSelectedText(editor: CodeMirror.Editor): string {
 		if (!editor.somethingSelected())
-			CodeBlockFromSelection.selectLineUnderCursor(editor);
+			this.selectLineUnderCursor(editor);
 
 		return editor.getSelection();
 	}
 
-	private static selectLineUnderCursor(editor: CodeMirror.Editor) {
-		let selection = CodeBlockFromSelection.getLineUnderCursor(editor);
+	selectLineUnderCursor(editor: CodeMirror.Editor) {
+		let selection = this.getLineUnderCursor(editor);
 		editor.getDoc().setSelection(selection.start, selection.end);
 	}
 
-	private static getLineUnderCursor(editor: CodeMirror.Editor): SelectionRange {
+	getLineUnderCursor(editor: CodeMirror.Editor): SelectionRange {
 		let fromCh, toCh: number;
 		let cursor = editor.getCursor();
 
