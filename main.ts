@@ -52,8 +52,9 @@ export default class CodeBlockFromSelection extends Plugin {
 		let editor = this.getEditor();
 		if (editor) {
 			let selectedText = this.getSelectedText(editor);
-			let language = this.settings.language;
+			let line = this.getLineUnderCursor(editor).start.line
 
+			let language = this.settings.language;
 			if(setting === "language2"){
 				language = this.settings.language2;
 			}
@@ -61,7 +62,10 @@ export default class CodeBlockFromSelection extends Plugin {
 				language = this.settings.language3;
 			}
 
-			editor.replaceSelection(`\n\`\`\`${language}\n${selectedText}\n\`\`\`\n`);
+			editor.replaceSelection(`\`\`\`${language}\n${selectedText}\n\`\`\`\n`);
+			if(!selectedText){
+				editor.setSelection({ line: line+2, ch:0 });
+			}
 		}
 	}
 
