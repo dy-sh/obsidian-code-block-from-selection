@@ -2,13 +2,13 @@ import { App, Plugin, PluginSettingTab, Setting, MarkdownView } from 'obsidian';
 import * as CodeMirror from "codemirror";
 
 interface PluginSettings {
-	language1: string;
+	language: string;
 	language2: string;
 	language3: string;
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
-	language1: '',
+	language: '',
 	language2: '',
 	language3: '',
 }
@@ -30,7 +30,7 @@ export default class CodeBlockFromSelection extends Plugin {
 	addCommands(): void {
 		this.addCommand({
 			id: 'code-block-from-selection-1',
-			name: this.settings.language1 ? `language1 (${this.settings.language1})` : "language1",
+			name: this.settings.language ? `language1 (${this.settings.language})` : "language1",
 			callback: () => this.insertCodeBlock("language1")
 		});
 
@@ -54,7 +54,7 @@ export default class CodeBlockFromSelection extends Plugin {
 			let selectedText = this.getSelectedText(editor);
 			let line = this.getLineUnderCursor(editor).start.line
 
-			let language = this.settings.language1;
+			let language = this.settings.language;
 			if (setting === "language2") {
 				language = this.settings.language2;
 			}
@@ -129,9 +129,9 @@ class SettingTab extends PluginSettingTab {
 			.setDesc('')
 			.addText(text => text
 				.setPlaceholder('Example: c++')
-				.setValue(this.plugin.settings.language1)
+				.setValue(this.plugin.settings.language)
 				.onChange(async (value) => {
-					this.plugin.settings.language1 = value;
+					this.plugin.settings.language = value;
 					await this.plugin.saveSettings();
 
 					this.plugin.addCommands()
