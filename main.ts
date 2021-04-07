@@ -2,13 +2,13 @@ import { App, Plugin, PluginSettingTab, Setting, MarkdownView } from 'obsidian';
 import * as CodeMirror from "codemirror";
 
 interface PluginSettings {
-	language: string;
+	language1: string;
 	language2: string;
 	language3: string;
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
-	language: '',
+	language1: '',
 	language2: '',
 	language3: '',
 }
@@ -23,27 +23,27 @@ export default class CodeBlockFromSelection extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-		this._addCommand()
+		this.addCommands()
 		this.addSettingTab(new SettingTab(this.app, this));
 	}
 
-	_addCommand(): void{
+	addCommands(): void {
 		this.addCommand({
-			id: 'code-block-from-selection',
-			name: `language(${this.settings.language})` || "language",  // reload this addon and the 
-			callback: () => this.insertCodeBlock("language")
+			id: 'code-block-from-selection-1',
+			name: this.settings.language1 ? `language1 (${this.settings.language1})` : "language1",
+			callback: () => this.insertCodeBlock("language1")
 		});
-		
+
 
 		this.addCommand({
 			id: 'code-block-from-selection-2',
-			name: `language2(${this.settings.language2})` || "language2",
+			name: this.settings.language2 ? `language2 (${this.settings.language2})` : "language2",
 			callback: () => this.insertCodeBlock("language2")
 		});
 
 		this.addCommand({
 			id: 'code-block-from-selection-3',
-			name: `language3(${this.settings.language3})` || "language3",
+			name: this.settings.language3 ? `language3 (${this.settings.language3})` : "language3",
 			callback: () => this.insertCodeBlock("language3")
 		});
 	}
@@ -54,17 +54,17 @@ export default class CodeBlockFromSelection extends Plugin {
 			let selectedText = this.getSelectedText(editor);
 			let line = this.getLineUnderCursor(editor).start.line
 
-			let language = this.settings.language;
-			if(setting === "language2"){
+			let language = this.settings.language1;
+			if (setting === "language2") {
 				language = this.settings.language2;
 			}
-			if(setting === "language3"){
+			if (setting === "language3") {
 				language = this.settings.language3;
 			}
 
 			editor.replaceSelection(`\`\`\`${language}\n${selectedText}\n\`\`\`\n`);
-			if(!selectedText){
-				editor.setSelection({ line: line+2, ch:0 });
+			if (!selectedText) {
+				editor.setSelection({ line: line + 2, ch: 0 });
 			}
 		}
 	}
@@ -125,42 +125,42 @@ class SettingTab extends PluginSettingTab {
 		containerEl.createEl('h2', { text: 'Code block from selection - Settings' });
 
 		new Setting(containerEl)
-			.setName('Language')
+			.setName('Language1')
 			.setDesc('')
 			.addText(text => text
 				.setPlaceholder('Example: c++')
-				.setValue(this.plugin.settings.language)
+				.setValue(this.plugin.settings.language1)
 				.onChange(async (value) => {
-					this.plugin.settings.language = value;
+					this.plugin.settings.language1 = value;
 					await this.plugin.saveSettings();
 
-					this.plugin._addCommand()
+					this.plugin.addCommands()
 				}));
 
 		new Setting(containerEl)
 			.setName('Language2')
 			.setDesc('')
 			.addText(text => text
-				.setPlaceholder('Example: c++')
+				.setPlaceholder('')
 				.setValue(this.plugin.settings.language2)
 				.onChange(async (value) => {
 					this.plugin.settings.language2 = value;
 					await this.plugin.saveSettings();
 
-					this.plugin._addCommand()
+					this.plugin.addCommands()
 				}));
 
 		new Setting(containerEl)
 			.setName('Language3')
 			.setDesc('')
 			.addText(text => text
-				.setPlaceholder('Example: c++')
+				.setPlaceholder('')
 				.setValue(this.plugin.settings.language3)
 				.onChange(async (value) => {
 					this.plugin.settings.language3 = value;
 					await this.plugin.saveSettings();
 
-					this.plugin._addCommand()
+					this.plugin.addCommands()
 				}));
 	}
 }
