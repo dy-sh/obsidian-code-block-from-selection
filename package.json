@@ -1,6 +1,6 @@
 {
   "name": "obsidian-code-block-from-selection",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Adds code block for the selected text",
   "main": "main.js",
   "scripts": {
