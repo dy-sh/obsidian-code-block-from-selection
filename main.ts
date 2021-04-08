@@ -64,7 +64,7 @@ export default class CodeBlockFromSelection extends Plugin {
 
 			editor.replaceSelection(`\`\`\`${language}\n${selectedText}\n\`\`\`\n`);
 			if (!selectedText) {
-				editor.setSelection({ line: line + 2, ch: 0 });
+				editor.setSelection({ line: line + 1, ch: 0 });
 			}
 		}
 	}
