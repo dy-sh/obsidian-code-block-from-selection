@@ -51,7 +51,7 @@ export default class CodeBlockFromSelection extends Plugin {
     });
   }
 
-  _uuid(): string {
+  uuid(): string {
     var d = Date.now();
     if (
       typeof performance !== "undefined" &&
@@ -69,7 +69,7 @@ export default class CodeBlockFromSelection extends Plugin {
     );
   }
 
-  insertCodeBlock(language: String): void {
+  insertCodeBlock(language: string): void {
     let editor = this.getEditor();
     if (editor) {
       let selectedText = this.getSelectedText(editor);
@@ -170,7 +170,7 @@ class SettingTab extends PluginSettingTab {
 
   addNewLanguage() {
     let setting = new Setting(this.containerEl);
-    let uuid = this.plugin._uuid();
+    let uuid = this.plugin.uuid();
 
     setting
       .setName("language")
