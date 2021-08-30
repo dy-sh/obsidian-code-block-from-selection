@@ -1,7 +1,7 @@
 {
 	"id": "code-block-from-selection",
 	"name": "Code block from selection",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"minAppVersion": "0.9.12",
 	"description": "Adds code block for the selected text",
 	"author": "Dmitry Savosh",
