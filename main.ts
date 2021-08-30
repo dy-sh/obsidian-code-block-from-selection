@@ -1,166 +1,204 @@
-import { App, Plugin, PluginSettingTab, Setting, MarkdownView } from 'obsidian';
+import {
+  App,
+  Plugin,
+  PluginSettingTab,
+  Setting,
+  MarkdownView,
+  addIcon,
+} from "obsidian";
 import * as CodeMirror from "codemirror";
 
+interface languageMap {
+  [name: string]: string;
+}
 interface PluginSettings {
-	language1: string;
-	language2: string;
-	language3: string;
+  languages: languageMap;
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
-	language1: '',
-	language2: '',
-	language3: '',
-}
+  languages: { "e3dea0f5-37f2-4d79-ae58-490af3228069": "js" },
+};
 
 interface SelectionRange {
-	start: { line: number; ch: number };
-	end: { line: number; ch: number };
+  start: { line: number; ch: number };
+  end: { line: number; ch: number };
 }
 
 export default class CodeBlockFromSelection extends Plugin {
-	settings: PluginSettings;
+  settings: PluginSettings;
 
-	async onload() {
-		await this.loadSettings();
-		this.addCommands()
-		this.addSettingTab(new SettingTab(this.app, this));
-	}
+  async onload() {
+    await this.loadSettings();
+    this.initCommands();
+    this.addSettingTab(new SettingTab(this.app, this));
+  }
 
-	addCommands(): void {
-		this.addCommand({
-			id: 'code-block-from-selection',
-			name: this.settings.language1 ? `language1 (${this.settings.language1})` : "language1",
-			callback: () => this.insertCodeBlock("language1")
-		});
+  initCommands(): void {
+    for (const [uuid, language] of Object.entries(this.settings.languages)) {
+      this.addCommand({
+        id: uuid,
+        name: language,
+        callback: () => this.insertCodeBlock(language),
+      });
+    }
+  }
 
+  _addCommand(id: string, language: string) {
+    this.addCommand({
+      id: id,
+      name: language,
+      callback: () => this.insertCodeBlock(language),
+    });
+  }
 
-		this.addCommand({
-			id: 'code-block-from-selection-2',
-			name: this.settings.language2 ? `language2 (${this.settings.language2})` : "language2",
-			callback: () => this.insertCodeBlock("language2")
-		});
+  uuid(): string {
+    var d = Date.now();
+    if (
+      typeof performance !== "undefined" &&
+      typeof performance.now === "function"
+    ) {
+      d += performance.now(); //use high-precision timer if available
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+      /[xy]/g,
+      function (c) {
+        var r = (d + Math.random() * 16) % 16 | 0;
+        d = Math.floor(d / 16);
+        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+      }
+    );
+  }
 
-		this.addCommand({
-			id: 'code-block-from-selection-3',
-			name: this.settings.language3 ? `language3 (${this.settings.language3})` : "language3",
-			callback: () => this.insertCodeBlock("language3")
-		});
-	}
+  insertCodeBlock(language: string): void {
+    let editor = this.getEditor();
+    if (editor) {
+      let selectedText = this.getSelectedText(editor);
+      let line = this.getLineUnderCursor(editor).start.line;
 
-	insertCodeBlock(setting: String): void {
-		let editor = this.getEditor();
-		if (editor) {
-			let selectedText = this.getSelectedText(editor);
-			let line = this.getLineUnderCursor(editor).start.line
+      editor.replaceSelection(`\`\`\`${language}\n${selectedText}\n\`\`\`\n`);
+      if (!selectedText) {
+        editor.setSelection({ line: line + 1, ch: 0 });
+      }
+    }
+  }
 
-			let language = this.settings.language1;
-			if (setting === "language2") {
-				language = this.settings.language2;
-			}
-			if (setting === "language3") {
-				language = this.settings.language3;
-			}
+  getEditor(): CodeMirror.Editor {
+    return this.app.workspace.getActiveViewOfType(MarkdownView)?.sourceMode
+      .cmEditor;
+  }
 
-			editor.replaceSelection(`\`\`\`${language}\n${selectedText}\n\`\`\`\n`);
-			if (!selectedText) {
-				editor.setSelection({ line: line + 1, ch: 0 });
-			}
-		}
-	}
+  getSelectedText(editor: CodeMirror.Editor): string {
+    if (!editor.somethingSelected()) this.selectLineUnderCursor(editor);
 
-	getEditor(): CodeMirror.Editor {
-		return this.app.workspace.getActiveViewOfType(MarkdownView)?.sourceMode.cmEditor;
-	}
+    return editor.getSelection();
+  }
 
-	getSelectedText(editor: CodeMirror.Editor): string {
-		if (!editor.somethingSelected())
-			this.selectLineUnderCursor(editor);
+  selectLineUnderCursor(editor: CodeMirror.Editor) {
+    let selection = this.getLineUnderCursor(editor);
+    editor.getDoc().setSelection(selection.start, selection.end);
+  }
 
-		return editor.getSelection();
-	}
+  getLineUnderCursor(editor: CodeMirror.Editor): SelectionRange {
+    let fromCh, toCh: number;
+    let cursor = editor.getCursor();
 
-	selectLineUnderCursor(editor: CodeMirror.Editor) {
-		let selection = this.getLineUnderCursor(editor);
-		editor.getDoc().setSelection(selection.start, selection.end);
-	}
+    fromCh = 0;
+    toCh = editor.getLine(cursor.line).length;
 
-	getLineUnderCursor(editor: CodeMirror.Editor): SelectionRange {
-		let fromCh, toCh: number;
-		let cursor = editor.getCursor();
+    return {
+      start: { line: cursor.line, ch: fromCh },
+      end: { line: cursor.line, ch: toCh },
+    };
+  }
 
-		fromCh = 0;
-		toCh = editor.getLine(cursor.line).length;
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
 
-		return {
-			start: { line: cursor.line, ch: fromCh },
-			end: { line: cursor.line, ch: toCh },
-		};
-	}
-
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
 }
 
-
-
 class SettingTab extends PluginSettingTab {
-	plugin: CodeBlockFromSelection;
+  plugin: CodeBlockFromSelection;
 
-	constructor(app: App, plugin: CodeBlockFromSelection) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
+  constructor(app: App, plugin: CodeBlockFromSelection) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
 
-	display(): void {
-		let { containerEl } = this;
+  display(): void {
+    let { containerEl } = this;
 
-		containerEl.empty();
+    containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Code block from selection - Settings' });
+    containerEl.createEl("h2", {
+      text: "Code block from selection - Settings",
+    });
 
-		new Setting(containerEl)
-			.setName('Language1')
-			.setDesc('')
-			.addText(text => text
-				.setPlaceholder('Example: c++')
-				.setValue(this.plugin.settings.language1)
-				.onChange(async (value) => {
-					this.plugin.settings.language1 = value;
-					await this.plugin.saveSettings();
+    new Setting(containerEl).setName("Add new language").addButton(cb => {
+      cb.setButtonText("Add");
+      cb.setCta();
+      cb.onClick(() => {
+        this.addNewLanguage();
+      });
+    });
 
-					this.plugin.addCommands()
-				}));
+    // init settingtab
+    for (const [uuid, language] of Object.entries(
+      this.plugin.settings.languages
+    )) {
+      const setting = new Setting(containerEl);
+      setting
+        .setName("Language")
+        .setDesc("")
+        .addText(text =>
+          text
+            .setPlaceholder("add new language")
+            .setValue(language)
+            .onChange(async value => {
+              this.plugin.settings.languages[uuid] = value;
+              await this.plugin.saveSettings();
 
-		new Setting(containerEl)
-			.setName('Language2')
-			.setDesc('')
-			.addText(text => text
-				.setPlaceholder('')
-				.setValue(this.plugin.settings.language2)
-				.onChange(async (value) => {
-					this.plugin.settings.language2 = value;
-					await this.plugin.saveSettings();
+              this.plugin._addCommand(uuid, value);
+            })
+        );
+      this.addExtraButton(setting, uuid);
+    }
+  }
 
-					this.plugin.addCommands()
-				}));
+  addNewLanguage() {
+    let setting = new Setting(this.containerEl);
+    let uuid = this.plugin.uuid();
 
-		new Setting(containerEl)
-			.setName('Language3')
-			.setDesc('')
-			.addText(text => text
-				.setPlaceholder('')
-				.setValue(this.plugin.settings.language3)
-				.onChange(async (value) => {
-					this.plugin.settings.language3 = value;
-					await this.plugin.saveSettings();
+    setting
+      .setName("language")
+      .setDesc("")
+      .addText(text =>
+        text.setPlaceholder("add new language").onChange(async value => {
+          this.plugin.settings.languages[uuid] = value;
+          await this.plugin.saveSettings();
 
-					this.plugin.addCommands()
-				}));
-	}
+          this.plugin._addCommand(uuid, value);
+        })
+      );
+
+    this.addExtraButton(setting, uuid);
+  }
+
+  addExtraButton(setting: Setting, uuid: string) {
+    setting.addExtraButton(cb => {
+      cb.setIcon("cross");
+      cb.setTooltip("Remove");
+      cb.onClick(() => {
+        delete this.plugin.settings.languages[uuid];
+        this.plugin.saveSettings();
+        (this.plugin.app as any).commands.removeCommand(
+          `${this.plugin.manifest.id}:${uuid}`
+        );
+        setting.settingEl.hide();
+      });
+    });
+  }
 }
